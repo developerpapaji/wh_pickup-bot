@@ -2,10 +2,13 @@ name: RX Pickup Bot
 
 on:
   schedule:
-    - cron: "*/5 * * * *"
+    - cron: "*/5 * * * *"   # Chalega har 5-25 minute ke beech (GitHub delay ke sath)
 
-  workflow_dispatch:
-  push: 
+  workflow_dispatch:        # Manual run button ke liye
+
+  push:                     # Jab bhi main branch par code push karo tab chalne ke liye
+    branches:
+      - main
    
 
 jobs:
@@ -34,6 +37,5 @@ jobs:
           GOOGLE_CREDENTIALS: ${{ secrets.GOOGLE_CREDENTIALS }}
           TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
           TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
-
         run: |
           python main.py
