@@ -1,0 +1,38 @@
+name: RX Pickup Bot
+
+on:
+
+schedule:
+- cron: "*/10 * * * *"
+
+workflow_dispatch:
+
+jobs:
+
+run-bot:
+
+```
+runs-on: ubuntu-latest
+
+steps:
+
+  - uses: actions/checkout@v4
+
+  - uses: actions/setup-python@v5
+    with:
+      python-version: "3.12"
+
+  - name: Install Packages
+    run: |
+      pip install -r requirements.txt
+
+  - name: Run Bot
+    env:
+      EMAIL_ID: ${{ secrets.EMAIL_ID }}
+      EMAIL_PASSWORD: ${{ secrets.EMAIL_PASSWORD }}
+      GOOGLE_SHEET_NAME: ${{ secrets.GOOGLE_SHEET_NAME }}
+      GOOGLE_CREDENTIALS: ${{ secrets.GOOGLE_CREDENTIALS }}
+
+    run: |
+      python main.py
+```
