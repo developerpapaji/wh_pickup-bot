@@ -8,98 +8,121 @@ import pandas as pd
 import gspread
 from google.oauth2.service_account import Credentials
 
-print("NEW VERSION LOADED")
+print("===== VERSION 2 =====")
 print("RX Pickup Bot Started")
 
 # ==========================================
-# EMAIL CONFIG
+
+# CONFIG
+
 # ==========================================
 
 EMAIL_ID = os.environ["EMAIL_ID"]
 EMAIL_PASSWORD = os.environ["EMAIL_PASSWORD"]
+SHEET_NAME = os.environ["GOOGLE_SHEET_NAME"]
 
 # ==========================================
+
 # GOOGLE SHEET LOGIN
+
 # ==========================================
 
 google_creds = json.loads(
-    os.environ["GOOGLE_CREDENTIALS"]
+os.environ["GOOGLE_CREDENTIALS"]
 )
 
 creds = Credentials.from_service_account_info(
-    google_creds,
-    scopes=[
-        "https://www.googleapis.com/auth/spreadsheets",
-        "https://www.googleapis.com/auth/drive"
-    ]
+google_creds,
+scopes=[
+"https://www.googleapis.com/auth/spreadsheets",
+"https://www.googleapis.com/auth/drive"
+]
 )
 
 client = gspread.authorize(creds)
 
 sheet = client.open(
-    os.environ["GOOGLE_SHEET_NAME"]
+SHEET_NAME
 ).sheet1
 
 print("Google Sheet Connected")
 
 # ==========================================
-# EXISTING CODES
+
+# EXISTING UNIQUE CODES
+
 # ==========================================
 
 existing_codes = set()
 
 try:
 
-    data = sheet.get_all_values()
+```
+data = sheet.get_all_values()
 
-    for row in data[1:]:
+for row in data[1:]:
 
-        if len(row) > 1:
+    if len(row) > 1:
 
-            code = str(row[1]).strip()
+        code = str(row[1]).strip()
 
-            if code:
-                existing_codes.add(code)
+        if code:
+            existing_codes.add(code)
+```
 
-except:
-    pass
+except Exception as e:
+
+```
+print(
+    f"Code Load Error : {e}"
+)
+```
 
 print(
-    f"Existing Codes : {len(existing_codes)}"
+f"Existing Codes : {len(existing_codes)}"
 )
 
 # ==========================================
+
 # IMAP LOGIN
+
 # ==========================================
 
 mail = imaplib.IMAP4_SSL(
-    "webmail.responsexpress.com",
-    993
+"smartmail.bookmyhost.com",
+993
 )
 
 mail.login(
-    EMAIL_ID,
-    EMAIL_PASSWORD
+EMAIL_ID,
+EMAIL_PASSWORD
 )
+
+print("IMAP Login Success")
 
 mail.select("INBOX")
 
 status, messages = mail.search(
-    None,
-    'UNSEEN'
+None,
+'UNSEEN'
 )
 
 mail_ids = messages[0].split()
 
 print(
-    f"Unread Mails : {len(mail_ids)}"
+f"Unread Mails : {len(mail_ids)}"
 )
 
 # ==========================================
+
 # PROCESS MAILS
+
 # ==========================================
 
 for mail_id in reversed(mail_ids):
+
+```
+try:
 
     status, msg_data = mail.fetch(
         mail_id,
@@ -113,7 +136,7 @@ for mail_id in reversed(mail_ids):
     )
 
     subject = str(
-        msg["Subject"]
+        msg.get("Subject", "")
     )
 
     print(
@@ -151,18 +174,22 @@ for mail_id in reversed(mail_ids):
         )
 
     if not html_body:
+
+        print(
+            "No HTML Body Found"
+        )
+
         continue
 
     tables = pd.read_html(
         StringIO(html_body)
     )
 
+    print(
+        f"Tables Found : {len(tables)}"
+    )
+
     if len(tables) == 0:
-
-        print(
-            "No Table Found"
-        )
-
         continue
 
     df = tables[0]
@@ -177,13 +204,16 @@ for mail_id in reversed(mail_ids):
 
     for _, row in df.iterrows():
 
+        if "Unique Code" not in row:
+            continue
+
         unique_code = str(
             row["Unique Code"]
         ).strip()
 
         if (
             unique_code == ""
-            or unique_code == "nan"
+            or unique_code.lower() == "nan"
         ):
             continue
 
@@ -214,13 +244,30 @@ for mail_id in reversed(mail_ids):
             f"SUCCESS : {len(rows_to_add)} rows uploaded"
         )
 
-    # mark mail read
+    else:
+
+        print(
+            "No New Records"
+        )
+
+    # MARK AS READ
 
     mail.store(
         mail_id,
         '+FLAGS',
         '\\Seen'
     )
+
+    print(
+        "Mail Marked Read"
+    )
+
+except Exception as e:
+
+    print(
+        f"Mail Error : {e}"
+    )
+```
 
 mail.logout()
 
