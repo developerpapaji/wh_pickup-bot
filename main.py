@@ -2,6 +2,7 @@ import os
 import json
 import imaplib
 import email
+import requests
 from io import StringIO
 from datetime import datetime
 
@@ -44,6 +45,10 @@ sheet = client.open(
 ).sheet1
 
 print("Google Sheet Connected")
+
+send_telegram(
+    "🚀 SuperUrgent Pickup Bot Started Successfully"
+)
 
 # ==========================================
 # EXISTING UNIQUE CODES
@@ -262,3 +267,22 @@ for mail_id in reversed(mail_ids):
 mail.logout()
 
 print("Completed")
+def send_telegram(message):
+
+    try:
+
+        token = os.environ["TELEGRAM_BOT_TOKEN"]
+        chat_id = os.environ["TELEGRAM_CHAT_ID"]
+
+        requests.post(
+            f"https://api.telegram.org/bot{token}/sendMessage",
+            data={
+                "chat_id": chat_id,
+                "text": message
+            },
+            timeout=20
+        )
+
+    except Exception as e:
+
+        print(f"Telegram Error : {e}")
