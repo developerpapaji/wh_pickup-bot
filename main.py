@@ -6,15 +6,12 @@ import requests
 from io import StringIO
 from datetime import datetime
 
-
 import pandas as pd
 import gspread
 from google.oauth2.service_account import Credentials
 
 def send_telegram(message):
-
     try:
-
         token = os.environ["TELEGRAM_BOT_TOKEN"]
         chat_id = os.environ["TELEGRAM_CHAT_ID"]
 
@@ -26,9 +23,7 @@ def send_telegram(message):
             },
             timeout=20
         )
-
     except Exception as e:
-
         print(f"Telegram Error : {e}")
 
 
@@ -78,27 +73,16 @@ print("Google Sheet Connected")
 existing_codes = set()
 
 try:
-
     data = sheet.get_all_values()
-
     for row in data[1:]:
-
         if len(row) > 1:
-
             code = str(row[1]).strip()
-
             if code:
                 existing_codes.add(code)
-
 except Exception as e:
+    print(f"Code Load Error : {e}")
 
-    print(
-        f"Code Load Error : {e}"
-    )
-
-print(
-    f"Existing Codes : {len(existing_codes)}"
-)
+print(f"Existing Codes : {len(existing_codes)}")
 
 # ==========================================
 # IMAP LOGIN
@@ -125,18 +109,14 @@ status, messages = mail.search(
 
 mail_ids = messages[0].split()
 
-print(
-    f"Unread Mails : {len(mail_ids)}"
-)
+print(f"Unread Mails : {len(mail_ids)}")
 
 # ==========================================
 # PROCESS MAILS
 # ==========================================
 
 for mail_id in reversed(mail_ids):
-
     try:
-
         status, msg_data = mail.fetch(
             mail_id,
             "(RFC822)"
@@ -152,9 +132,7 @@ for mail_id in reversed(mail_ids):
             msg.get("Subject", "")
         )
 
-        print(
-            f"\nProcessing : {subject}"
-        )
+        print(f"\nProcessing : {subject}")
 
         if "Arrange the Pickup" not in subject:
             continue
@@ -162,61 +140,37 @@ for mail_id in reversed(mail_ids):
         html_body = ""
 
         if msg.is_multipart():
-
             for part in msg.walk():
-
-                if (
-                    part.get_content_type()
-                    == "text/html"
-                ):
-
+                if part.get_content_type() == "text/html":
                     html_body = part.get_payload(
                         decode=True
-                    ).decode(
-                        errors="ignore"
-                    )
-
+                    ).decode(errors="ignore")
                     break
-
         else:
-
             html_body = msg.get_payload(
                 decode=True
-            ).decode(
-                errors="ignore"
-            )
+            ).decode(errors="ignore")
 
         if not html_body:
-
-            print(
-                "No HTML Body Found"
-            )
-
+            print("No HTML Body Found")
             continue
 
         tables = pd.read_html(
             StringIO(html_body)
         )
 
-        print(
-            f"Tables Found : {len(tables)}"
-        )
+        print(f"Tables Found : {len(tables)}")
 
         if len(tables) == 0:
             continue
 
         df = tables[0]
-
         df.columns = df.iloc[0]
-
-        df = df[1:].reset_index(
-            drop=True
-        )
+        df = df[1:].reset_index(drop=True)
 
         rows_to_add = []
 
         for _, row in df.iterrows():
-
             if "Unique Code" not in row:
                 continue
 
@@ -224,18 +178,11 @@ for mail_id in reversed(mail_ids):
                 row["Unique Code"]
             ).strip()
 
-            if (
-                unique_code == ""
-                or unique_code.lower() == "nan"
-            ):
+            if unique_code == "" or unique_code.lower() == "nan":
                 continue
 
             if unique_code in existing_codes:
-
-                print(
-                    f"Duplicate : {unique_code}"
-                )
-
+                print(f"Duplicate : {unique_code}")
                 continue
 
             new_row = [
@@ -246,61 +193,36 @@ for mail_id in reversed(mail_ids):
                 row.fillna("").tolist()
             )
             
-            for _, row in df.iterrows():
+            rows_to_add.append(new_row)
+            existing_codes.add(unique_code)
+            
+        # FOR LOOP KHATAM
+        
+        if rows_to_add:
+            sheet.append_rows(
+                rows_to_add,
+                value_input_option="USER_ENTERED"
+            )
+        
+            print(f"SUCCESS : {len(rows_to_add)} rows uploaded")
+        
+            send_telegram(
+                f"✅ Pickup Uploaded\n\nRows Added: {len(rows_to_add)}\n\nSubject:\n{subject}"
+            )
+        else:
+            print("No New Records")
 
-    ...
-
-                rows_to_add.append(new_row)
-            
-                existing_codes.add(unique_code)
-            
-            # FOR LOOP KHATAM
-            
-            if rows_to_add:
-            
-                sheet.append_rows(
-                    rows_to_add,
-                    value_input_option="USER_ENTERED"
-                )
-            
-                print(
-                    f"SUCCESS : {len(rows_to_add)} rows uploaded"
-                )
-            
-                send_telegram(
-                    f"""✅ Pickup Uploaded
-            
-            Rows Added: {len(rows_to_add)}
-            
-            Subject:
-            {subject}
-            """
-                )
-            
-            else:
-            
-                print(
-                    "No New Records"
-                )
+        # Mark mail as read
         mail.store(
             mail_id,
             '+FLAGS',
             '\\Seen'
         )
-
-        print(
-            "Mail Marked Read"
-        )
+        print("Mail Marked Read")
 
     except Exception as e:
-
-        print(
-            f"Mail Error : {e}"
-        )
+        print(f"Mail Error : {e}")
     
         send_telegram(
-            f"""❌ Pickup Bot Error
-    
-    {e}
-    """
+            f"❌ Pickup Bot Error\n\n{e}"
         )
