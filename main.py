@@ -246,12 +246,16 @@ for mail_id in reversed(mail_ids):
                 row.fillna("").tolist()
             )
             
-            rows_to_add.append(new_row)
+            for _, row in df.iterrows():
 
-            existing_codes.add(
-                unique_code
-            )
+    ...
 
+                rows_to_add.append(new_row)
+            
+                existing_codes.add(unique_code)
+            
+            # FOR LOOP KHATAM
+            
             if rows_to_add:
             
                 sheet.append_rows(
