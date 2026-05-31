@@ -1,19 +1,47 @@
-- name: Run Bot
-  env:
-    EMAIL_ID: ${{ secrets.EMAIL_ID }}
-    EMAIL_PASSWORD: ${{ secrets.EMAIL_PASSWORD }}
-    GOOGLE_SHEET_NAME: ${{ secrets.GOOGLE_SHEET_NAME }}
-    GOOGLE_CREDENTIALS: ${{ secrets.GOOGLE_CREDENTIALS }}
+name: RX Pickup Bot
 
-  run: |
-    echo "===== CURRENT DIRECTORY ====="
-    pwd
+on:
+  schedule:
+    - cron: "*/10 * * * *"
 
-    echo "===== FILES ====="
-    ls -la
+  workflow_dispatch:
 
-    echo "===== MAIN.PY CONTENT ====="
-    cat main.py
+jobs:
+  run-bot:
 
-    echo "===== RUNNING ====="
-    python main.py
+    runs-on: ubuntu-latest
+
+    steps:
+
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install Packages
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+
+      - name: Run Bot
+        env:
+          EMAIL_ID: ${{ secrets.EMAIL_ID }}
+          EMAIL_PASSWORD: ${{ secrets.EMAIL_PASSWORD }}
+          GOOGLE_SHEET_NAME: ${{ secrets.GOOGLE_SHEET_NAME }}
+          GOOGLE_CREDENTIALS: ${{ secrets.GOOGLE_CREDENTIALS }}
+
+        run: |
+          echo "===== CURRENT DIRECTORY ====="
+          pwd
+
+          echo "===== FILES ====="
+          ls -la
+
+          echo "===== MAIN.PY CONTENT ====="
+          cat main.py
+
+          echo "===== RUNNING ====="
+          python main.py
