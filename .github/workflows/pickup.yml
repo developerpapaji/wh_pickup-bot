@@ -2,18 +2,15 @@ name: RX Pickup Bot
 
 on:
   schedule:
-    - cron: "*/5 * * * *"
+    - cron: "*/10 * * * *"
 
   workflow_dispatch:
-  
 
 jobs:
   run-bot:
-
     runs-on: ubuntu-latest
 
     steps:
-
       - name: Checkout Repository
         uses: actions/checkout@v4
 
@@ -37,14 +34,4 @@ jobs:
           TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
 
         run: |
-          echo "===== CURRENT DIRECTORY ====="
-          pwd
-
-          echo "===== FILES ====="
-          ls -la
-
-          echo "===== MAIN.PY CONTENT ====="
-          cat main.py
-
-          echo "===== RUNNING ====="
           python main.py
