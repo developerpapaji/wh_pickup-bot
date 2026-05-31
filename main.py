@@ -27,7 +27,7 @@ def send_telegram(message):
         print(f"Telegram Error : {e}")
 
 
-print("===== VERSION 2 =====")
+print("===== VERSION 2 (PRO) =====")
 print("RX Pickup Bot Started")
 
 # ==========================================
@@ -61,10 +61,6 @@ sheet = client.open(
 ).sheet1
 
 print("Google Sheet Connected")
-
-# send_telegram(
-#     "🚀 SuperUrgent Pickup Bot Started Successfully"
-# )
 
 # ==========================================
 # EXISTING UNIQUE CODES
@@ -132,13 +128,13 @@ for mail_id in reversed(mail_ids):
             msg.get("Subject", "")
         )
 
-        email_datetime = parsedate_to_datetime(
-            msg.get("Date")
-        )
+        email_datetime_obj = parsedate_to_datetime(msg.get("Date"))
+        # Telegram format ke liye cleaner date: 31-May-2026 09:11 PM
+        tele_date_format = email_datetime_obj.strftime("%d-%b-%Y %I:%M %p")
         
-        email_datetime = email_datetime.strftime(
-            "%d-%m-%Y %H:%M:%S"
-        )
+        # Sheet ke liye standard format (jo tumhara chal rha tha)
+        email_datetime = email_datetime_obj.strftime("%d-%m-%Y %H:%M:%S")
+        
         print(f"\nProcessing : {subject}")
 
         if "Arrange the Pickup" not in subject:
@@ -176,6 +172,11 @@ for mail_id in reversed(mail_ids):
         df = df[1:].reset_index(drop=True)
 
         rows_to_add = []
+        
+        # --- PRO STATISTICS COUNTERS ---
+        total_rows = 0
+        duplicate_count = 0
+        unique_codes_processed = []
 
         for _, row in df.iterrows():
             if "Unique Code" not in row:
@@ -188,8 +189,11 @@ for mail_id in reversed(mail_ids):
             if unique_code == "" or unique_code.lower() == "nan":
                 continue
 
+            total_rows += 1
+
             if unique_code in existing_codes:
                 print(f"Duplicate : {unique_code}")
+                duplicate_count += 1
                 continue
 
             new_row = [
@@ -202,6 +206,7 @@ for mail_id in reversed(mail_ids):
             
             rows_to_add.append(new_row)
             existing_codes.add(unique_code)
+            unique_codes_processed.append(unique_code)
             
         # FOR LOOP KHATAM
         
@@ -212,10 +217,37 @@ for mail_id in reversed(mail_ids):
             )
         
             print(f"SUCCESS : {len(rows_to_add)} rows uploaded")
-        
-            send_telegram(
-                f"✅ Pickup Uploaded\n\nRows Added: {len(rows_to_add)}\n\nSubject:\n{subject}"
+            
+            # --- PRO LEVEL TELEGRAM MESSAGE BODY CREATION ---
+            total_unique_in_mail = total_rows - duplicate_count # Mail ke andar ke actual unique
+            new_records_count = len(rows_to_add)
+            
+            # Pickup Codes formatting (Pehle 10 dikhayega, baki ko truncate karega)
+            visible_codes = unique_codes_processed[:10]
+            codes_text = "\n".join(visible_codes)
+            if len(unique_codes_processed) > 10:
+                more_count = len(unique_codes_processed) - 10
+                codes_text += f"\n...and {more_count} more"
+                
+            pro_message = (
+                f"🚀 SUPER URGENT WH BOT\n"
+                f"✅ NEW PICKUPS ADDED\n\n"
+                f"📧 Subject\n"
+                f"{subject}\n\n"
+                f"📅 Email Date\n"
+                f"{tele_date_format}\n\n"
+                f"📈 Statistics\n"
+                f"├─ Total Rows      : {total_rows}\n"
+                f"├─ Unique IDs      : {total_rows - duplicate_count}\n"
+                f"├─ Duplicate IDs   : {duplicate_count}\n"
+                f"├─ New Records     : {new_records_count}\n"
+                f"└─ Status          : SUCCESS\n\n"
+                f"📦 Pickup Codes ({new_records_count})\n"
+                f"{codes_text}\n\n"
+                f"🤖 RX Pickup Automation"
             )
+        
+            send_telegram(pro_message)
         else:
             print("No New Records")
 
