@@ -11,6 +11,27 @@ import pandas as pd
 import gspread
 from google.oauth2.service_account import Credentials
 
+def send_telegram(message):
+
+    try:
+
+        token = os.environ["TELEGRAM_BOT_TOKEN"]
+        chat_id = os.environ["TELEGRAM_CHAT_ID"]
+
+        requests.post(
+            f"https://api.telegram.org/bot{token}/sendMessage",
+            data={
+                "chat_id": chat_id,
+                "text": message
+            },
+            timeout=20
+        )
+
+    except Exception as e:
+
+        print(f"Telegram Error : {e}")
+
+
 print("===== VERSION 2 =====")
 print("RX Pickup Bot Started")
 
@@ -46,9 +67,9 @@ sheet = client.open(
 
 print("Google Sheet Connected")
 
-send_telegram(
-    "🚀 SuperUrgent Pickup Bot Started Successfully"
-)
+# send_telegram(
+#     "🚀 SuperUrgent Pickup Bot Started Successfully"
+# )
 
 # ==========================================
 # EXISTING UNIQUE CODES
@@ -231,23 +252,32 @@ for mail_id in reversed(mail_ids):
                 unique_code
             )
 
-        if rows_to_add:
-
-            sheet.append_rows(
-                rows_to_add,
-                value_input_option="USER_ENTERED"
-            )
-
-            print(
-                f"SUCCESS : {len(rows_to_add)} rows uploaded"
-            )
-
-        else:
-
-            print(
-                "No New Records"
-            )
-
+            if rows_to_add:
+            
+                sheet.append_rows(
+                    rows_to_add,
+                    value_input_option="USER_ENTERED"
+                )
+            
+                print(
+                    f"SUCCESS : {len(rows_to_add)} rows uploaded"
+                )
+            
+                send_telegram(
+                    f"""✅ Pickup Uploaded
+            
+            Rows Added: {len(rows_to_add)}
+            
+            Subject:
+            {subject}
+            """
+                )
+            
+            else:
+            
+                print(
+                    "No New Records"
+                )
         mail.store(
             mail_id,
             '+FLAGS',
@@ -263,26 +293,10 @@ for mail_id in reversed(mail_ids):
         print(
             f"Mail Error : {e}"
         )
-
-mail.logout()
-
-print("Completed")
-def send_telegram(message):
-
-    try:
-
-        token = os.environ["TELEGRAM_BOT_TOKEN"]
-        chat_id = os.environ["TELEGRAM_CHAT_ID"]
-
-        requests.post(
-            f"https://api.telegram.org/bot{token}/sendMessage",
-            data={
-                "chat_id": chat_id,
-                "text": message
-            },
-            timeout=20
+    
+        send_telegram(
+            f"""❌ Pickup Bot Error
+    
+    {e}
+    """
         )
-
-    except Exception as e:
-
-        print(f"Telegram Error : {e}")
