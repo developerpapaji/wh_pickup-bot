@@ -3,6 +3,8 @@ import json
 import imaplib
 import email
 from io import StringIO
+from datetime import datetime
+
 
 import pandas as pd
 import gspread
@@ -210,9 +212,15 @@ for mail_id in reversed(mail_ids):
 
                 continue
 
-            rows_to_add.append(
+            new_row = [
+                datetime.now().strftime("%d-%m-%Y %H:%M:%S")
+            ]
+            
+            new_row.extend(
                 row.fillna("").tolist()
             )
+            
+            rows_to_add.append(new_row)
 
             existing_codes.add(
                 unique_code
