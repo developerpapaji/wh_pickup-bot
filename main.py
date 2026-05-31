@@ -4,7 +4,7 @@ import imaplib
 import email
 import requests
 from io import StringIO
-from datetime import datetime
+from email.utils import parsedate_to_datetime
 
 import pandas as pd
 import gspread
@@ -132,6 +132,13 @@ for mail_id in reversed(mail_ids):
             msg.get("Subject", "")
         )
 
+        email_datetime = parsedate_to_datetime(
+            msg.get("Date")
+        )
+        
+        email_datetime = email_datetime.strftime(
+            "%d-%m-%Y %H:%M:%S"
+        )
         print(f"\nProcessing : {subject}")
 
         if "Arrange the Pickup" not in subject:
@@ -186,7 +193,7 @@ for mail_id in reversed(mail_ids):
                 continue
 
             new_row = [
-                datetime.now().strftime("%d-%m-%Y %H:%M:%S")
+                email_datetime
             ]
             
             new_row.extend(
