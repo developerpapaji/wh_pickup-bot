@@ -19,7 +19,8 @@ def send_telegram(message):
             f"https://api.telegram.org/bot{token}/sendMessage",
             data={
                 "chat_id": chat_id,
-                "text": message
+                "text": message,
+                "parse_mode": "Markdown"  # Enables clickable mono-spaced codes
             },
             timeout=20
         )
@@ -27,7 +28,7 @@ def send_telegram(message):
         print(f"Telegram Error : {e}")
 
 
-print("===== VERSION 2 (PRO) =====")
+print("===== VERSION 2 (PRO-MARKDOWN) =====")
 print("RX Pickup Bot Started")
 
 # ==========================================
@@ -129,10 +130,10 @@ for mail_id in reversed(mail_ids):
         )
 
         email_datetime_obj = parsedate_to_datetime(msg.get("Date"))
-        # Telegram format ke liye cleaner date: 31-May-2026 09:11 PM
+        # Telegram format: 31-May-2026 09:11 PM
         tele_date_format = email_datetime_obj.strftime("%d-%b-%Y %I:%M %p")
         
-        # Sheet ke liye standard format (jo tumhara chal rha tha)
+        # Sheet format
         email_datetime = email_datetime_obj.strftime("%d-%m-%Y %H:%M:%S")
         
         print(f"\nProcessing : {subject}")
@@ -218,16 +219,13 @@ for mail_id in reversed(mail_ids):
         
             print(f"SUCCESS : {len(rows_to_add)} rows uploaded")
             
-            # --- PRO LEVEL TELEGRAM MESSAGE BODY CREATION ---
-            total_unique_in_mail = total_rows - duplicate_count # Mail ke andar ke actual unique
+            # --- SARE CODES VISIBLE + ONE-TAP COPY LOGIC ---
+            total_unique_in_mail = total_rows - duplicate_count
             new_records_count = len(rows_to_add)
             
-            # Pickup Codes formatting (Pehle 10 dikhayega, baki ko truncate karega)
-            visible_codes = unique_codes_processed[:10]
-            codes_text = "\n".join(visible_codes)
-            if len(unique_codes_processed) > 10:
-                more_count = len(unique_codes_processed) - 10
-                codes_text += f"\n...and {more_count} more"
+            # Format all codes with backticks for monospace copy feature
+            all_codes_formatted = [f"`{code}`" for code in unique_codes_processed]
+            codes_text = "\n".join(all_codes_formatted)
                 
             pro_message = (
                 f"🚀 SUPER URGENT WH BOT\n"
@@ -238,7 +236,7 @@ for mail_id in reversed(mail_ids):
                 f"{tele_date_format}\n\n"
                 f"📈 Statistics\n"
                 f"├─ Total Rows      : {total_rows}\n"
-                f"├─ Unique IDs      : {total_rows - duplicate_count}\n"
+                f"├─ Unique IDs      : {total_unique_in_mail}\n"
                 f"├─ Duplicate IDs   : {duplicate_count}\n"
                 f"├─ New Records     : {new_records_count}\n"
                 f"└─ Status          : SUCCESS\n\n"
@@ -265,3 +263,4 @@ for mail_id in reversed(mail_ids):
         send_telegram(
             f"❌ Pickup Bot Error\n\n{e}"
         )
+        
