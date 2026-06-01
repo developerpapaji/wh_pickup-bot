@@ -2,7 +2,7 @@ name: RX Pickup Bot
 
 on:
   schedule:
-    - cron: "*/5 * * * *"   # Chalega har 5-25 minute ke beech (GitHub delay ke sath)
+    - cron: "*/30 * * * *"   # Chalega har 5-25 minute ke beech (GitHub delay ke sath)
 
   workflow_dispatch:        # Manual run button ke liye
 
