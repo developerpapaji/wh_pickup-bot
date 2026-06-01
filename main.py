@@ -13,17 +13,23 @@ from google.oauth2.service_account import Credentials
 def send_telegram(message):
     try:
         token = os.environ["TELEGRAM_BOT_TOKEN"]
-        chat_id = os.environ["TELEGRAM_CHAT_ID"]
 
-        requests.post(
-            f"https://api.telegram.org/bot{token}/sendMessage",
-            data={
-                "chat_id": chat_id,
-                "text": message,
-                "parse_mode": "Markdown"  # Enables clickable mono-spaced codes
-            },
-            timeout=20
-        )
+        chat_ids = os.environ[
+            "TELEGRAM_CHAT_IDS"
+        ].split(",")
+
+        for chat_id in chat_ids:
+
+            requests.post(
+                f"https://api.telegram.org/bot{token}/sendMessage",
+                data={
+                    "chat_id": chat_id.strip(),
+                    "text": message,
+                    "parse_mode": "Markdown"
+                },
+                timeout=20
+            )
+
     except Exception as e:
         print(f"Telegram Error : {e}")
 
